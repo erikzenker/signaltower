@@ -6,7 +6,16 @@ defmodule SignalTower.MixProject do
       app: :signal_tower,
       version: "1.1.0",
       elixir: "~> 1.9",
-      deps: deps()
+      deps: deps(),
+
+      releases: [
+        staging: [
+          include_executables_for: [:unix]
+        ],
+        production: [
+          include_executables_for: [:unix]
+        ]
+      ]
     ]
   end
 
