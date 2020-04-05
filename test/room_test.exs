@@ -1,8 +1,13 @@
+require IEx
+
 defmodule RoomTest do
   use ExUnit.Case, async: true
 
-  alias SignalTower.RoomSupervisor
-  
+  setup_all do
+    require IEx; IEx.pry
+    on_exit(make_ref(), fn() -> require IEx; IEx.pry end)
+  end
+
   test "r-room exists" do
     create_room("r-room")
     Process.registered |> Enum.member?(:"room_r-room") |> assert
@@ -107,7 +112,7 @@ defmodule RoomTest do
   end
 
   defp create_room(room_id) do
-    RoomSupervisor.create_room(room_id)
+    SignalTower.Room.create(room_id)
   end
 
   defp join_room(pid, room_pid) do

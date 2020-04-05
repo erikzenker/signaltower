@@ -12,9 +12,10 @@ defmodule SignalTower.RoomMember do
 end
 
 defmodule SignalTower.Room do
-  alias SignalTower.RoomSupervisor
+  alias SignalTower.Room
   alias SignalTower.RoomMember
   alias SignalTower.RoomMembership
+  alias SignalTower.RoomSupervisor
   alias SignalTower.Stats
   use GenServer
 
@@ -24,9 +25,27 @@ defmodule SignalTower.Room do
     name = "room_#{room_id}" |> String.to_atom
     GenServer.start_link(__MODULE__, room_id, name: name)
   end
+
+  def observe_room(pid) do
+    Process.monitor(pid)
+    receive do
+      {:DOWN, _, _, proc, reason} when reason != :noproc ->
+        IO.inspect {"room", proc, reason}
+        observe_room(pid)
+    end
+  end
+
+  def create(room_id) do
+    case DynamicSupervisor.start_child(RoomSupervisor, {Room, [room_id]}) do
+      {:ok, pid} ->
+        spawn(fn() -> observe_room(pid) end)
+        pid
+      {:error, {:already_started, pid}} -> pid
+    end
+  end
   
   def join_and_monitor(room_id, status) do
-    room_pid = RoomSupervisor.create_room(room_id)
+    room_pid = create(room_id)
     Process.monitor(room_pid)
     own_id = GenServer.call(room_pid, {:join, self(), status})
     %RoomMembership{id: room_id, pid: room_pid, own_id: own_id, own_status: status}
